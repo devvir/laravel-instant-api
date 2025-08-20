@@ -1,0 +1,33 @@
+{
+    "name": "devvir/laravel-instant-api",
+    "description": "Create a complete Laravel RESTful API in minutes.",
+    "type": "library",
+    "version": "0.1.0",
+    "require": {
+        "laravel/framework": "^12"
+    },
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Devvir\\InstantApi\\": "src/"
+        },
+        "files": [
+            "src/functions.php"
+        ]
+    },
+    "authors": [
+        {
+            "name": "Diego Indart",
+            "email": "db.indart.dev@gmail.com"
+        }
+    ],
+    "minimum-stability": "stable",
+
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Devvir\\InstantApi\\Providers\\InstantApiServiceProvider"
+            ]
+        }
+    }
+}
