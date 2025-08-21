@@ -2,19 +2,36 @@
 
 namespace Devvir\InstantApi;
 
+use BadMethodCallException;
 use Devvir\InstantApi\Config\Resource;
+use Devvir\InstantApi\Controllers\ApiResourceController;
+use Devvir\InstantApi\Controllers\BladeResourceController;
+use Devvir\InstantApi\Controllers\InertiaResourceController;
+use Illuminate\Routing\PendingResourceRegistration;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
 
 class InstantApi
 {
+    public const TYPE_API     = 'api';
+    public const TYPE_BLADE   = 'blade';
+    public const TYPE_INERTIA = 'inertia';
+
     public function __construct(protected Resolver $resolver) {}
 
-    public function create(): void
+    public function create(string $apiType = self::TYPE_API): Collection
     {
-        collect($this->resolver->getConfig())->each($this->registerRoutes(...));
+        $resourcesConfig = collect($this->resolver->getConfig());
+
+        return $resourcesConfig->map(
+            fn (Resource $resourceConfig) => $this->registerRoutes($apiType, $resourceConfig)
+        );
     }
 
+    /**
+     * Discover all existing Eloquent Models (resources).
+     */
     public static function discover(?string $path = null): array
     {
         $modelPaths = File::glob($path ?? app_path("Models/*.php"));
@@ -28,8 +45,14 @@ class InstantApi
         return $models ?? [];
     }
 
-    private function registerRoutes(Resource $config): void
+    private function registerRoutes(string $type, Resource $config): PendingResourceRegistration
     {
-        Route::apiResource($config->name, ResourceController::class);
+        return match ($type) {
+            self::TYPE_API     => Route::apiResource($config->name, ApiResourceController::class),
+            self::TYPE_BLADE   => Route::resource($config->name, BladeResourceController::class),
+            self::TYPE_INERTIA => Route::resource($config->name, InertiaResourceController::class),
+
+            default => throw new BadMethodCallException("Invalid API type `$type`"),
+        };
     }
 }

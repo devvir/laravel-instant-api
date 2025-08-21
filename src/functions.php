@@ -3,7 +3,7 @@
 use Devvir\InstantApi\InstantApi;
 use Devvir\InstantApi\Resolver;
 
-function createInstantApi(?array $config = null): void
+function createInstantApi(?array $config = null, string $type = InstantApi::TYPE_API): void
 {
     // TODO : move to app provider
     $resolver = app(Resolver::class);
@@ -11,5 +11,5 @@ function createInstantApi(?array $config = null): void
 
     app(Resolver::class)->addConfig($config);
 
-    app(InstantApi::class)->create();
+    app(InstantApi::class)->create($type);
 }

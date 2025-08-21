@@ -1,16 +1,17 @@
 <?php
 
-namespace Devvir\InstantApi;
+namespace Devvir\InstantApi\Controllers;
 
-use Illuminate\Database\Eloquent\Model;
+use Devvir\InstantApi\Resolver;
+use Illuminate\Contracts\View\View;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
+use Inertia\Response;
 
 /**
  * TODO : features for flexibility
@@ -64,11 +65,11 @@ use Illuminate\Support\Facades\Route;
  *      ~ If the function returns non-null, use that as the response, otherwise continue
  *      ~ This can be used to either replace the endpoint, or to change it (i.e. add relations, filters, checks, events, throw, etc.)
  */
-class ResourceController extends Controller
+abstract class ResourceController extends Controller
 {
     use AuthorizesRequests;
 
-    public function __construct(protected Resolver $resolver, Request $request)
+    public function __construct(protected Resolver $resolver)
     {
         if (! Route::currentRouteAction()) {
             return;
@@ -76,6 +77,14 @@ class ResourceController extends Controller
 
         $this->resolver->hydrate();
 
+        $this->handleAuthorization();
+    }
+
+    /**
+     * Resolve and apply policies and auth middleware according to the current configuration.
+     */
+    private function handleAuthorization(): void
+    {
         $inlinePolicy  = $this->resolver->policy();
         $routeResource = $this->resolver->route->model;
 
@@ -84,52 +93,22 @@ class ResourceController extends Controller
             : $this->authorizeResource($routeResource->class, $routeResource->param);
     }
 
-    /**)
+    /**
      * Execute an action on the controller.
      *
-     * @param  string  $method
-     * @param  array  $parameters
-     * @return \Symfony\Component\HttpFoundation\Response
+     * @override
      */
-    public function callAction($method, $parameters): JsonResponse
+    public function callAction($action, $parameters): JsonResponse | View | Response | RedirectResponse
     {
-        $internalMethod = "_{$method}_";
+        $parameters = $this->resolver->parameters($action);
 
-        $parameters = $this->resolver->parameters($method);
-
-        return $this->$internalMethod(...$parameters);
+        return $this->executeAction($action, ...$parameters);
     }
 
-    public function _index_(FormRequest $request, string $modelClass): JsonResponse
-    {
-        $list = $modelClass::paginate();
-
-        return new JsonResponse($list);
-    }
-
-    public function _show_(FormRequest $request, Model $model): JsonResponse
-    {
-        return new JsonResponse($model);
-    }
-
-    public function _store_(FormRequest $request, string $modelClass): JsonResponse
-    {
-        $instance = $modelClass::create($request->validated());
-
-        return new JsonResponse($instance, Response::HTTP_CREATED);
-    }
-
-    public function _update_(FormRequest $request, Model $model): JsonResponse
-    {
-        $instance = $model->updateOrFail($request->validated());
-
-        return new JsonResponse($instance);
-    }
-
-    public function _destroy_(FormRequest $request, Model $model): JsonResponse
-    {
-        $model->deleteOrFail();
-
-        return new JsonResponse(null, Response::HTTP_NO_CONTENT);
-    }
+    /**
+     * Rendering handler to be implemented on each concrete API.
+     *
+     * @return JsonResponse | View | Response
+     */
+    abstract protected function render(...$args);
 }

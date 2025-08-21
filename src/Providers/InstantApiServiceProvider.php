@@ -12,7 +12,7 @@ class InstantApiServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        // dd('there');
+        //
     }
 
     /**
