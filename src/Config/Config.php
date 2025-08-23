@@ -2,7 +2,7 @@
 
 namespace Devvir\InstantApi\Config;
 
-use Illuminate\Support\Str;
+use Illuminate\Support\Arr;
 use LogicException;
 
 class Config
@@ -10,7 +10,7 @@ class Config
     /**
      * List of Resource Configuration objects.
      *
-     * @var ResourceConfig[] $resources
+     * @var Resource[] $resources
      */
     private array $resources;
 
@@ -54,18 +54,20 @@ class Config
         return $this->resources[$resource] ?? null;
     }
 
-    public function findByRouteName(string $routeName)
+    /**
+     * Find the corresponding Resource config for the currently executed Route.
+     *
+     * @throws LogicException if no Resource config is found.
+     */
+    public function findByRouteName(string $routeName): Resource
     {
         $routeBase = last(explode('.', $routeName, -1));
 
-        foreach ($this->resources as $model => $config) {
-            $name = $specs->name ?? Str::plural(strtolower(class_basename($model)));
-
-            if ($name === $routeBase) {
-                return $config;
-            }
-        }
-
-        throw new LogicException('Cannot resolve the Resource for current route');
+        return Arr::first(
+            $this->resources,
+            fn ($cfg) => $routeBase === $cfg->name,
+            // TODO : allow "unconfigured" endpoints by providing a default Config when missing
+            fn () => throw new LogicException('Cannot resolve the Resource for current route')
+        );
     }
 }
