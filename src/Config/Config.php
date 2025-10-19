@@ -10,7 +10,7 @@ class Config
     /**
      * List of Resource Configuration objects.
      *
-     * @var Resource[] $resources
+     * @var array<int, Resource> $resources
      */
     private array $resources;
 
@@ -39,7 +39,7 @@ class Config
     /**
      * Get the full list of managed Resources' configurations.
      *
-     * @return Resource[]
+     * @return array<int, Resource>
      */
     public function get(): array
     {
